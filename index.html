@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bonafide Certificate Generator</title>
+    <style>
+        @page {
+    size: A4;
+    margin: 0;
+}
+
+        :root { --su-blue: #1a5a96; --bg-gray: #f0f2f5; }
+        
+        * { box-sizing: border-box; }
+        body { font-family: 'Times New Roman', Times, serif; background: var(--bg-gray); margin: 0; padding: 10px; color: #333; }
+        
+        /* RESPONSIVE FORM STYLING */
+        .no-print { 
+            max-width: 900px; 
+            margin: 10px auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
+        }
+
+        .input-group { 
+            display: grid; 
+            grid-template-columns: 1fr; /* 1 column for mobile */
+            gap: 15px; 
+            margin-bottom: 20px; 
+        }
+
+        @media (min-width: 600px) {
+            .input-group { grid-template-columns: 1fr 1fr; } /* 2 columns for tablets/PC */
+            .full-row { grid-column: span 2; }
+        }
+
+        label { font-weight: bold; font-size: 13px; margin-bottom: 6px; display: block; color: var(--su-blue); }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        input[type="text"] { text-transform: uppercase; }
+        #in-course { text-transform: none; }
+        
+        .btn-print { 
+            background: #28a745; color: white; border: none; padding: 16px; 
+            width: 100%; font-size: 18px; border-radius: 8px; cursor: pointer; 
+            transition: background 0.3s; font-weight: bold;
+        }
+        .btn-print:hover { background: #218838; }
+
+        /* RESPONSIVE CERTIFICATE PREVIEW */
+        .cert-viewport {
+            overflow-x: auto; /* Allows horizontal scroll if screen is tiny */
+            padding: 20px 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .certificate-container {
+            width: 210mm; 
+            height: 297mm; 
+            padding: 15mm; 
+            background: white; 
+            border: 1px solid #ddd; 
+            position: relative; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            flex-shrink: 0; /* Prevents shrinking in flex container */
+            overflow: hidden;  
+        }
+
+        /* Responsive Scaling for Mobile Screens */
+        @media (max-width: 850px) {
+            .cert-viewport { justify-content: flex-start; }
+            .certificate-container {
+                transform: scale(0.45); /* Scales the A4 view down to fit mobile */
+                transform-origin: top left;
+                margin-bottom: -160mm; /* Adjusts layout for the scaled element */
+            }
+        }
+        @media (max-width: 500px) {
+            .certificate-container { transform: scale(0.35); margin-bottom: -190mm; }
+        }
+
+        /* CERTIFICATE INTERNAL STYLING */
+        .header { text-align: center; border-bottom: 2px solid var(--su-blue); padding-bottom: 5px; }
+        .uni-info { font-size: 13px; margin: 2px 0; font-weight: bold; }
+        .ref-date { display: flex; justify-content: space-between; margin: 15px 0; font-weight: bold; font-size: 13px; }
+        
+        #out-ref-prefix, #out-ref-number, .dotted-line, #out-words, #out-name, #out-parent, #out-year, #out-course  #out-total-duration {
+            text-transform: uppercase;
+        }
+
+       .student-photo { 
+    position: absolute; 
+    right: 14mm; 
+    top: 61mm; 
+    width: 28mm; 
+    height: 27mm;  /* Thin black border for the photo box */
+    background: #ffffff; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    overflow: hidden; 
+    box-sizing: border-box;
+}
+
+.student-photo img { 
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; /* This is the "magic" property you need */
+    display: block;
+}
+ /* Removes extra margin and styles the title area */
+.title-area { 
+    text-align: center; 
+    margin: 5px 0; /* Very small top/bottom margin */
+    padding: 0;
+}
+
+.main-title { 
+    font-size: 22px; 
+    font-weight: bold; 
+    text-decoration: underline; 
+    margin: 0; /* Removes default h2 spacing */
+    line-height: 1.2;
+}
+
+.scholarship-line {
+    font-size: 16px; 
+    font-weight: bold; 
+    font-style: italic; /* Makes it "lower" style */
+    display: block; 
+    margin-top: -2px; /* Pulls it tighter to the main title */
+}
+
+        .content { font-size: 18px; line-height: 1.8; text-align: justify; margin-top: 50px; }
+        .dotted-line { border-bottom: 2px dotted #000; font-weight: bold; padding: 0 4px; }
+
+        .fee-section { margin-top: 20px; }
+        .fee-row { display: flex; justify-content: flex-start; margin: 5px 0; font-size: 18px; }
+        .fee-label { width: 350px; text-transform: uppercase; }
+        .fee-colon { width: 20px; font-weight: bold; }
+        .fee-amount { font-weight: bold; }
+
+        .horizontal-divider { border-top: 2px solid #000; margin: 10px 0; }
+        .total-row { display: flex; font-size: 18px; margin-top: 10px; }
+        .words-container { text-align: center; width: 100%; margin-top: 5px; font-weight: bold; font-size: 18px; }
+        
+        .bank-details { margin-top: 15px; font-size: 18px; line-height: 1.3; }
+        .bank-row { display: grid; grid-template-columns: 300px 10px auto; margin: 1px 0; }
+
+        .signature-wrapper { margin-top: 40px; display: flex; justify-content: flex-end; width: 100%; }
+        .signature-content { text-align: center; min-width: 350px; }
+        .sig-line { font-size: 10px; margin: 1px 0; text-transform: uppercase; }
+        .uni-name-small { font-size: 16px; font-weight: bold; }
+
+        /* PRINT SETTINGS */
+       @media print {
+    html, body {
+        width: 210mm;
+        height: 297mm;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: white;
+    }
+
+    .no-print { display: none !important; }
+
+    .cert-viewport {
+        padding: 0;
+        margin: 0;
+        display: block;
+    }
+
+    .certificate-container { 
+        width: 210mm;
+        height: 297mm;
+        margin: 0;
+        border: none;
+        box-shadow: none;
+        transform: none !important;
+        page-break-inside: avoid;
+        overflow: hidden;
+    }
+}
+
+    </style>
+</head>
+<body>
+
+<div class="no-print">
+    <h2 style="text-align: center; color: var(--su-blue);">Bonafide Generator</h2>
+    <div class="input-group">
+        <div><label>Student Photo</label><input type="file" accept="image/*" onchange="previewImg(this, 'photo-img')"></div>
+        <div><label>Ref No.</label><input type="text" id="in-ref" placeholder="SUN/OR/SS/BC/2024/10967" oninput="sync(this, 'out-ref')"></div>
+        <div><label>Date (Day)</label><input type="number" id="in-date-day" min="1" max="31" placeholder="28" onchange="formatDate()"></div>
+        <div><label>Month</label><select id="in-date-month" onchange="formatDate()"><option value="">Select Month</option><option value="January">January</option><option value="February">February</option><option value="March">March</option><option value="April">April</option><option value="May">May</option><option value="June">June</option><option value="July">July</option><option value="August">August</option><option value="September">September</option><option value="October">October</option><option value="November">November</option><option value="December">December</option></select></div>
+        <div><label>Year</label><input type="number" id="in-date-year" placeholder="2024" onchange="formatDate()"></div>
+        <div><label>Scholarship Year</label><input type="text" id="in-scholarship-year" placeholder="2025-26" oninput="sync(this, 'out-scholarship-year')"></div>
+        <div class="full-row"><label>Student Name</label><input type="text" id="in-name" placeholder="NAME" oninput="sync(this, 'out-name')"></div>
+        <div><label>Roll No.</label><input type="text" id="in-roll" placeholder="35" oninput="sync(this, 'out-roll')"></div>
+        <div><label>PRN No.</label><input type="text" id="in-prn" placeholder="220105181000" oninput="sync(this, 'out-prn')"></div>
+        <div class="full-row"><label>Parent/Guardian Name</label><input type="text" id="in-parent" placeholder="FATHER NAME" oninput="sync(this, 'out-parent')"></div>
+        <div><label>Class Year</label><select id="in-year" onchange="sync(this, 'out-year')"><option value="">Select Year</option><option value="FIRST">FIRST</option><option value="SECOND">SECOND</option><option value="THIRD">THIRD</option><option value="FOURTH">FOURTH</option></select></div>
+        <div><label>Student Type</label><select id="in-student-type" onchange="updateStudentType()"><option value="hosteller" selected>Hosteller</option><option value="day-scholar">Day Scholar</option></select></div>
+        <div class="full-row"><label>Course & Branch</label><textarea id="in-course" rows="2" oninput="sync(this, 'out-course')">B.Tech in Computer Science Engineering in Artificial Intelligence And Machine Learning</textarea></div>
+        <div><label>Academic Year</label><input type="text" id="in-duration" placeholder="2023-2027" oninput="sync(this, 'out-duration')"></div>
+
+        <div><label>Total Course Duration (Words)</label><input type="text" id="in-total-duration" placeholder="FOUR" oninput="sync(this, 'out-total-duration')"></div>
+
+        <div><label id="tuition-label">Tuition Fees & Hostel Fee</label><input type="number" id="in-tuition-hostel" value="163410.00" step="0.01" oninput="calculateFees()"></div>
+        <div><label>Development Fee</label><input type="number" id="in-development" value="14090.00" step="0.01" oninput="calculateFees()"></div>
+        <div><label>Other Fee</label><input type="number" id="in-other" value="10000.00" step="0.01" oninput="calculateFees()"></div>
+        <div><label>Total Fee Amount</label><input type="text" id="in-fee" readonly></div>
+        <div class="full-row"><label>Total Fee (In Words)</label><input type="text" id="in-words" readonly></div>
+    </div>
+    <button class="btn-print" onclick="window.print()">Print Certificate</button>
+</div>
+
+<div class="cert-viewport">
+    <div class="certificate-container" id="cert">
+        <div class="header">
+            <img src="./sandip univerity.jpeg" style="max-height: 60px; margin: 0 auto 10px;" alt="University Logo">
+            <p class="uni-info">Mahiravani, Trimbak Road, Nashik - 422 213</p>
+            <p class="uni-info">Website: http://www.sandipuniversity.edu.in | Email: student@sandipuniversity.edu.in</p>
+            <p class="uni-info">Phone: (02594) 222 541-45 | Fax: (02594) 222 555</p>
+        </div>
+
+        <div class="ref-date">
+            <div><strong>Ref :</strong> <span id="out-ref-prefix">SUN/OR/SS/BC/2024/</span><span id="out-ref-number" style="border-bottom: 2px dotted #000;">10967</span></div>
+            <div><strong>Date :</strong> <span id="out-date" style="border-bottom: 2px dotted #000;">28<sup>TH</sup> October 2024</span></div>
+        </div>
+
+        <div class="student-photo"><img id="photo-img" src="" alt="Photo"></div>
+
+        <div class="title-area">
+    <h2 class="main-title">BONAFIDE CERTIFICATE</h2>
+    <span class="scholarship-line">
+        (For Scholarship <span id="out-scholarship-year">2024-25</span>)
+    </span>
+</div>
+
+        <div class="content">
+            This is to certify that Mr./Ms. <span class="dotted-line" id="out-name">NAME</span> Class Roll NO. <span class="dotted-line" id="out-roll">35</span>. 
+            PRN NO. <span class="dotted-line" id="out-prn">220105181000</span>. D/o / S/o. <span class="dotted-line" id="out-parent">FATHER NAME</span> Is a student of <span class="dotted-line" id="out-year">YEAR</span> 
+            Year. <span class="dotted-line" id="out-course">(B.Tech in Computer Science Engineering)</span> for the academic year. <span class="dotted-line" id="out-duration">2023-2027.</span>. He/She is a bonafide student of our University. The duration of the course is <span class="dotted-line" id="out-total-duration">FOUR</span> years.<span id="hosteller-text"> He/She is a Hosteller student in university hostel.</span>
+            <p>Yearly Non-refundable fee structure of our University is as follows:</p>
+        </div>
+
+        <div class="fee-section">
+            <div class="fee-row"><div class="fee-label" id="fee-label-1">1. TUITION FEES & HOSTEL FEE</div><div class="fee-colon">:</div><div class="fee-amount" id="out-tuition-hostel">163410.00</div></div>
+            <div class="fee-row"><div class="fee-label">2. DEVELOPMENT FEE</div><div class="fee-colon">:</div><div class="fee-amount" id="out-development">14090.00</div></div>
+            <div class="fee-row"><div class="fee-label">3. OTHER FEE</div><div class="fee-colon">:</div><div class="fee-amount" id="out-other">10000.00</div></div>
+            <div class="horizontal-divider"></div>
+            <div class="total-row"><div class="fee-label">Total fees given by applicant</div><div class="fee-colon">:</div><div class="fee-amount" style="font-size: 20px;" id="out-fee">187500.00</div></div>
+            <div class="words-container">(<span id="out-words">One Lakh Eighty Seven Thousand Five Hundred Only</span>)</div>
+        </div>
+
+        <div class="bank-details">
+            <div class="bank-row">Institute's Bank Name<span>:</span><strong>HDFC BANK LTD, THATTE NAGAR</strong></div>
+            <div class="bank-row">Bank CBS Account Number<span>:</span><strong>50100207594285</strong></div>
+            <div class="bank-row">IFSC Code<span>:</span><strong>HDFC0000064</strong></div>
+            <div class="bank-row">MICR Code<span>:</span><strong>422240002</strong></div>
+        </div>
+
+        <div class="signature-wrapper">
+            <div class="signature-content">
+                <div class="sig-line uni-name-small"><strong>REGISTRAR/ASSISTANT REGISTRAR</strong></div>
+                <div class="sig-line uni-name-small">SANDIP UNIVERSITY, NASHIK</div>
+                <div style="margin-top: 25px;" class="sig-line">College name and Address</div>
+                <div class="sig-line">(College Seal)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function sync(el, targetId) {
+        if (targetId === 'out-ref') {
+            const val = el.value || el.placeholder;
+            const idx = val.lastIndexOf('/');
+            if (idx !== -1) {
+                document.getElementById('out-ref-prefix').innerText = val.substring(0, idx + 1);
+                document.getElementById('out-ref-number').innerText = val.substring(idx + 1);
+            }
+        } else {
+            document.getElementById(targetId).innerText = el.value || el.placeholder;
+        }
+    }
+
+    function formatDate() {
+        const d = document.getElementById('in-date-day').value;
+        const m = document.getElementById('in-date-month').value;
+        const y = document.getElementById('in-date-year').value;
+        if (d && m && y) {
+            let s = 'TH';
+            if (d < 11 || d > 13) {
+                switch (d % 10) { case 1: s = 'ST'; break; case 2: s = 'ND'; break; case 3: s = 'RD'; break; }
+            }
+            document.getElementById('out-date').innerHTML = `${d}<sup>${s}</sup> ${m} ${y}`;
+        }
+    }
+
+    function numberToWords(num) {
+        if (num === 0) return 'Zero Only';
+        const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+        const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+        const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+        const helper = n => {
+            if (n < 10) return units[n];
+            if (n < 20) return teens[n - 10];
+            if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + units[n % 10] : '');
+            if (n < 1000) return units[Math.floor(n / 100)] + ' Hundred' + (n % 100 !== 0 ? ' ' + helper(n % 100) : '');
+            return '';
+        };
+        let res = '', c = Math.floor(num / 10000000); num %= 10000000;
+        let l = Math.floor(num / 100000); num %= 100000;
+        let t = Math.floor(num / 1000); num %= 1000;
+        if (c > 0) res += helper(c) + ' Crore ';
+        if (l > 0) res += helper(l) + ' Lakh ';
+        if (t > 0) res += helper(t) + ' Thousand ';
+        if (num > 0) res += helper(num);
+        return res.trim() + ' Only';
+    }
+
+    function calculateFees() {
+        const t = parseFloat(document.getElementById('in-tuition-hostel').value) || 0;
+        const d = parseFloat(document.getElementById('in-development').value) || 0;
+        const o = parseFloat(document.getElementById('in-other').value) || 0;
+        const total = t + d + o;
+        document.getElementById('in-fee').value = total.toFixed(2);
+        document.getElementById('in-words').value = numberToWords(Math.floor(total));
+        document.getElementById('out-tuition-hostel').innerText = t.toFixed(2);
+        document.getElementById('out-development').innerText = d.toFixed(2);
+        document.getElementById('out-other').innerText = o.toFixed(2);
+        document.getElementById('out-fee').innerText = total.toFixed(2);
+        document.getElementById('out-words').innerText = numberToWords(Math.floor(total));
+    }
+
+    function updateStudentType() {
+        const type = document.getElementById('in-student-type').value;
+        const isHostel = type === 'hosteller';
+        document.getElementById('tuition-label').innerText = isHostel ? 'Tuition Fees & Hostel Fee' : 'Tuition Fees';
+        document.getElementById('fee-label-1').innerText = isHostel ? '1. TUITION FEES & HOSTEL FEE' : '1. TUITION FEES';
+        document.getElementById('hosteller-text').style.display = isHostel ? 'inline' : 'none';
+    }
+
+    function previewImg(input, imgId) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                const img = document.getElementById(imgId);
+                img.src = e.target.result;
+                img.style.display = 'block'; 
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // Initialize
+    calculateFees();
+</script>
+</body>
+</html>
